@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "view.h"
 #include "kit_tools/mzapo_phys.h"
@@ -27,10 +28,10 @@ void init_drawing(){
 
 void render(objects_t* aliens, objects_t* space_ship){
 
-    draw_background_to_array(PURPLE);
+    draw_background_to_array(BLACK);
 
-    draw_objects_to_array(aliens->objects, aliens->count, BLACK);
-    draw_objects_to_array(space_ship->objects, space_ship->count, BLACK);
+    draw_objects_to_array(aliens->objects, aliens->count, ORANGE);
+    draw_objects_to_array(space_ship->objects, space_ship->count, BLUE);
 
     draw_array_to_display();
 }
@@ -41,18 +42,14 @@ void draw_background_to_array(uint16_t color){
     }
 }
 void draw_objects_to_array(object_desc_t *objects, int count, uint16_t color){
-    object_desc_t object;
+    object_desc_t* object;
     for(int obj = 0; obj < count; obj++){
-        object = objects[obj];
-        for(int i = 0; i < object.height; i++){
-            for(int j = 0; j < object.width; j++){
-                if(object.bits[i]<<j & (0x1<<(object.width-1))){
-                    for(int sy = 0; sy < object.scale; sy++){
-                        for(int sx = 0; sx < object.scale; sx++){
-                            display[object.pos_x+j*object.scale+sx + (object.height+i*object.scale+sy)*DISPLAY_WIDTH] = color;
-                        }
-                    }
-                    draw_pixel_scaled(object.pos_x+j*object.scale, object.height+i*object.scale, object.scale, color);
+        object = objects+obj;
+//        printf("%d\n", object->pos_x);
+        for(int i = 0; i < object->height; i++){
+            for(int j = 0; j < object->width; j++){
+                if(object->bits[i]<<j & (0x1<<(object->width-1))){
+                    draw_pixel_scaled(object->pos_x+j*object->scale, object->pos_y+i*object->scale, object->scale, color);
                 }
             }
         }
@@ -62,7 +59,7 @@ void draw_objects_to_array(object_desc_t *objects, int count, uint16_t color){
 void draw_pixel_scaled(int x, int y, int scale, uint16_t color){
     for(int i = 0; i < scale; i++){
         for(int j = 0; j < scale; j++){
-            display[x+j + (y+i)*DISPLAY_WIDTH] = color;
+            display[(x+j)%DISPLAY_WIDTH + (y+i)*DISPLAY_WIDTH] = color;
         }
     }
 }

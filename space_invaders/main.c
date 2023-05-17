@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
 
     struct timespec loop_delay;
     loop_delay.tv_sec = 0;
-    loop_delay.tv_nsec = 33 * 1000 * 1000;
+    loop_delay.tv_nsec = 1000/30 * 1000 * 1000;
 
     while(true){
 

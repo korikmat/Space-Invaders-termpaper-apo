@@ -10,12 +10,16 @@ typedef struct {
     uint16_t *bits;
     int pos_x;
     int pos_y;
+    int size_x;
+    int size_y;
 
 } object_desc_t;
 
 typedef struct {
     int count;
     object_desc_t *objects;
+    int speed_x;
+    int speed_y;
 
 } objects_t;
 
