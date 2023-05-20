@@ -16,6 +16,6 @@
 
 
 void init_drawing();
-void render(objects_t* aliens, objects_t* space_ship);
+void render(objects_t** objects, int obj_num);
 
 #endif //SPACE_INVADERS_VIEW_H

@@ -12,6 +12,9 @@ LDLIBS += -lrt -lpthread
 SOURCES = main.c kit_tools/mzapo_phys.c kit_tools/mzapo_parlcd.c kit_tools/serialize_lock.c
 SOURCES += game_objects/aliens.c
 SOURCES += game_objects/space_ship.c
+SOURCES += game_objects/bullets.c
+SOURCES += game_objects/walls.c
+SOURCES += game_objects/game_text.c
 SOURCES += game_view/view.c
 SOURCES += game_model/model.c
 
