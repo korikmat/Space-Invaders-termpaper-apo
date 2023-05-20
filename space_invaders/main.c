@@ -19,10 +19,11 @@
 #include "game_objects/bullets.h"
 #include "game_objects/game_text.h"
 #include "game_objects/walls.h"
+#include "game_objects/lives.h"
 
 
 
-#define OBJECTS_NUM 5
+#define OBJECTS_NUM 6
 
 int main(int argc, char *argv[]) {
     printf("Started\n");
@@ -41,10 +42,11 @@ int main(int argc, char *argv[]) {
     objects[WALLS] = create_walls();
     objects[WALLS]->color = GREEN;
 
+    objects[LIVES] = create_lives();
+    objects[LIVES]->color = WHITE;
+
     objects[GAME_TEXT] = create_game_text();
     objects[GAME_TEXT]->color = WHITE;
-
-
 
     init_model();
     init_drawing();

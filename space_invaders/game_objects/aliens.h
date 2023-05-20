@@ -17,8 +17,8 @@
 #define FIFTH_LINE 4
 
 #define FIRST 0
-#define SECOND 1
-#define THIRD 2
+#define SECOND 3
+#define THIRD 6
 
 
 #define OFFSET_Y 63

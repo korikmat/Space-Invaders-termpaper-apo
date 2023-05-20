@@ -6,7 +6,8 @@
 #define SPACE_SHIP  1
 #define BULLETS     2
 #define WALLS       3
-#define GAME_TEXT   4
+#define LIVES       4
+#define GAME_TEXT   5
 
 void init_model();
 void advance_state(objects_t** objects, int obj_num);

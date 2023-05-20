@@ -19,6 +19,7 @@ objects_t* create_game_text(){
         game_text_desc[i].bit_height = *char_height;
         game_text_desc[i].bit_width = char_width[0];
         game_text_desc[i].size_y = game_text_desc[i].bit_height * game_text_desc[i].scale;
+        game_text_desc[i].bits_offset = 0;
     }
     objects_t* game_text = malloc(sizeof(objects_t));
     game_text->count = CHAR_NUM;

@@ -20,6 +20,7 @@ objects_t* create_space_ship(){
     space_ship_desc->size_x = space_ship_desc->bit_width * space_ship_desc->scale;
     space_ship_desc->size_y = space_ship_desc->bit_height * space_ship_desc->scale;
     space_ship_desc->status = true;
+    space_ship_desc->bits_offset = 0;
 
 
     objects_t *space_ship = malloc(sizeof(objects_t));
@@ -28,7 +29,7 @@ objects_t* create_space_ship(){
     space_ship->objects = space_ship_desc;
 //    objects_t space_ship = {
 //            1,
-//            space_ship_desc
+//            live_desc
 //    };
 
     return space_ship;

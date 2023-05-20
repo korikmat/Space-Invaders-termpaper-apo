@@ -51,7 +51,7 @@ void draw_objects_to_array(object_desc_t *objects, int count, uint16_t color){
         }
         for(int i = 0; i < object->bit_height; i++){
             for(int j = 0; j < object->bit_width; j++){
-                if(object->bits[i]<<j & (0x1<<(object->bit_width - 1))){
+                if((object->bits+object->bits_offset)[i]<<j & (0x1<<(object->bit_width - 1))){
                     draw_pixel_scaled(object->pos_x+j*object->scale, object->pos_y+i*object->scale, object->scale, color);
                 }
             }

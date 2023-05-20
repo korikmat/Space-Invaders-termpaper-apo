@@ -15,6 +15,7 @@ SOURCES += game_objects/space_ship.c
 SOURCES += game_objects/bullets.c
 SOURCES += game_objects/walls.c
 SOURCES += game_objects/game_text.c
+SOURCES += game_objects/lives.c
 SOURCES += game_view/view.c
 SOURCES += game_model/model.c
 
@@ -32,7 +33,11 @@ TARGET_USER ?= root
 # for use from Eduroam network use TARGET_IP=localhost and enable next line
 #SSH_OPTIONS=-o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" -o "Port=2222"
 #SSH_GDB_TUNNEL_REQUIRED=y
-SSH_OPTIONS=-i /home/shchnad/Downloads/mzapo-root-key
+#SSH_OPTIONS=-i /home/mathew/Downloads/ssh-apo/mzapo-root-key
+
+ SSH_OPTIONS=-i /home/shchnad/Downloads/mzapo-root-key
+
+
 # SSH_OPTIONS=-o 'ProxyJump=korikmat@postel.felk.cvut.cz'
 
 OBJECTS += $(filter %.o,$(SOURCES:%.c=%.o))

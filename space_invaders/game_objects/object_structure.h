@@ -9,6 +9,7 @@ typedef struct {
     int bit_height;
     int scale;
     uint16_t *bits;
+    int bits_offset;
     int status;
     int pos_x;
     int pos_y;

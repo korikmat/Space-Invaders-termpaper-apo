@@ -15,9 +15,11 @@ objects_t* create_bullets(){
         bullets_desc[i].bit_width = 1;
 
         if(i == 0){
-            bullets_desc[i].bits = bullets_bits;
+//            bullets_desc[i].bits = bullets_bits;
+            bullets_desc[i].bits_offset = 0;
         } else {
-            bullets_desc[i].bits = bullets_bits;
+            bullets_desc[i].bits_offset = 0;
+//            bullets_desc[i].bits = bullets_bits;
         }
 
         bullets_desc[i].pos_x = 0;
@@ -26,7 +28,8 @@ objects_t* create_bullets(){
         bullets_desc[i].size_x = bullets_desc[i].bit_width * bullets_desc[i].scale;
         bullets_desc[i].size_y = bullets_desc[i].bit_height * bullets_desc[i].scale;
         bullets_desc[i].status = false;
-
+        bullets_desc[i].bits = bullets_bits;
+//        bullets_desc[0].bits_offset = 0;
 
     }
 
