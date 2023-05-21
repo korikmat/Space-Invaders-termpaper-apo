@@ -7,7 +7,7 @@
 #define ALIENS_NUM 55
 #define ALIENS_IN_LINE 11
 
-#define ALIENS_INITIAL_SPEED_X 16
+#define ALIENS_INITIAL_SPEED_X 4
 #define ALIENS_INITIAL_SPEED_Y 0
 
 #define FIRST_LINE 0
@@ -16,20 +16,20 @@
 #define FOURTH_LINE 3
 #define FIFTH_LINE 4
 
-#define FIRST 0
-#define SECOND 3
-#define THIRD 6
+#define FIRST 1
+#define SECOND 4
+#define THIRD 7
 
 
-#define OFFSET_Y 63
-#define DISTANCE_X 29
+#define OFFSET_Y 68
+#define DISTANCE_X 32
 #define DISTANCE_Y 24
 
-#define FIRST_GROUP_OFFSET_X 87
+#define FIRST_GROUP_OFFSET_X 74
 
-#define SECOND_GROUP_OFFSET_X 84
+#define SECOND_GROUP_OFFSET_X 70
 
-#define THIRD_GROUP_OFFSET_X 83
+#define THIRD_GROUP_OFFSET_X 68
 
 objects_t* create_aliens();
 

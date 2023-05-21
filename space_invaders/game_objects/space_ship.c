@@ -4,7 +4,7 @@
 #include "../textures/space_ship_texture.h"
 
 #define START_POS 250
-#define POS_Y 291
+#define POS_Y 276
 
 object_desc_t* space_ship_desc;
 

@@ -5,6 +5,7 @@
 #include "kit_tools/mzapo_phys.h"
 #include "kit_tools/mzapo_regs.h"
 #include "kit_tools/mzapo_parlcd.h"
+#include "background_pink_floyd.h"
 
 #define DISPLAY_WIDTH 480
 #define DISPLAY_HEIGHT 320
@@ -38,15 +39,19 @@ void render(objects_t** objects, int obj_num){
 }
 
 void draw_background_to_array(uint16_t color){
+//    for (int i = 0; i < DISPLAY_WIDTH*DISPLAY_HEIGHT; i++) {
+//        display[i]=color;
+//    }
     for (int i = 0; i < DISPLAY_WIDTH*DISPLAY_HEIGHT; i++) {
-        display[i]=color;
+        display[i]=background[i];
     }
+//    display = background;
 }
 void draw_objects_to_array(object_desc_t *objects, int count, uint16_t color){
     object_desc_t* object;
     for(int ptr = 0; ptr < count; ptr++){
         object = objects+ptr;
-        if(!object->status){
+        if(object->status == false){
             continue;
         }
         for(int i = 0; i < object->bit_height; i++){

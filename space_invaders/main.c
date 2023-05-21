@@ -31,22 +31,25 @@ int main(int argc, char *argv[]) {
     objects_t** objects = malloc(OBJECTS_NUM*sizeof(objects_t));
 
     objects[ALIENS] = create_aliens();
-    objects[ALIENS]->color = ORANGE;
+//    objects[ALIENS]->color = ORANGE;
+    objects[ALIENS]->color = WHITE;
 
     objects[SPACE_SHIP] = create_space_ship();
-    objects[SPACE_SHIP]->color = BLUE;
+    objects[SPACE_SHIP]->color = RED;
+//    objects[SPACE_SHIP]->color = GREEN;
 
     objects[BULLETS] = create_bullets();
     objects[BULLETS]->color = WHITE;
 
     objects[WALLS] = create_walls();
-    objects[WALLS]->color = GREEN;
+    objects[WALLS]->color = WHITE;
 
     objects[LIVES] = create_lives();
+//    objects[LIVES]->color = WHITE;
     objects[LIVES]->color = WHITE;
 
     objects[GAME_TEXT] = create_game_text();
-    objects[GAME_TEXT]->color = WHITE;
+    objects[GAME_TEXT]->color = RED;
 
     init_model();
     init_drawing();

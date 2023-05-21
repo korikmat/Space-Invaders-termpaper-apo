@@ -3,8 +3,8 @@
 #include "game_objects/object_structure.h"
 
 #define ALIENS      0
-#define SPACE_SHIP  1
-#define BULLETS     2
+#define SPACE_SHIP  2
+#define BULLETS     1
 #define WALLS       3
 #define LIVES       4
 #define GAME_TEXT   5

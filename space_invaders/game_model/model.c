@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
 #include "model.h"
 #include "kit_tools/mzapo_phys.h"
@@ -37,7 +38,13 @@ unsigned char *mem_base;
 int game_score = 0;
 int lives_left = 3;
 
+int frames1 = 0;
+struct timeval start_time1, end_time1;
+double elapsed_time1;
+
 void init_model(){
+    gettimeofday(&start_time1, NULL);
+
     mem_base = map_phys_address(SPILED_REG_BASE_PHYS, SPILED_REG_SIZE, 0);
 }
 
@@ -61,9 +68,12 @@ void advance_state(objects_t** objects, int obj_num){
 //    detect_hits(objects[ALIENS], objects[BULLETS]);
     actualize_lives(objects[LIVES]);
 
+    update_game_text(objects[GAME_TEXT]);
+
     update_texture(objects);
 
-    update_game_text(objects[GAME_TEXT]);
+
+
 }
 
 void move_space_ship(object_desc_t* space_ship){
@@ -147,7 +157,7 @@ void move_alive_alien(objects_t* aliens, int curr_idx){
                 continue;
             }
             if(all_aliens[i].pos_x+all_aliens[i].size_x+(*speed_x) > 480 || all_aliens[i].pos_x+(*speed_x) < 0){
-                (*speed_y) = 20;
+                (*speed_y) = 16;
                 (*speed_x)*=-1;
 
                 break;
@@ -205,7 +215,7 @@ void check_knob_presses(object_desc_t* bullet, int pos_x){
 }
 
 void move_space_ship_bullet(object_desc_t* bullet){
-    if(bullet->pos_y-4 <= 0){
+    if(bullet->pos_y-8 <= 0){
         bullet->status = false;
         return;
     }
@@ -215,9 +225,9 @@ void move_space_ship_bullet(object_desc_t* bullet){
 //    printf("%d\n", (int)(((r>>16)&0xff)*320)/256);
 //    printf("%d\n", (int)((b&0xff)*480)/256);
 
-    bullet->pos_y = (int)(((r>>16)&0xff)*320)/256;
-    bullet->pos_x = (int)((b&0xff)*480)/256;
-//    bullet->pos_y-=4;
+//    bullet->pos_y = (int)(((r>>16)&0xff)*320)/256;
+//    bullet->pos_x = (int)((b&0xff)*480)/256;
+    bullet->pos_y-=8;
 }
 
 void move_alien_bullet(object_desc_t* bullet){
@@ -262,15 +272,26 @@ void detect_intersections(objects_t** objects){
         objects[BULLETS]->objects[0].status = false;
     }
 
-    for(int i = 0; i < objects[BULLETS]->count; i++){
-        wounded_obj = detect_hits(objects[SPACE_SHIP], objects[BULLETS]->objects+i);
+//    for(int i = 0; i < objects[BULLETS]->count; i++){
+//        wounded_obj = detect_hits(objects[SPACE_SHIP], objects[BULLETS]->objects+i);
+//
+//        if(wounded_obj != -1){
+//
+//            objects[BULLETS]->objects[0].status = false;
+//            lives_left--;
+//        }
+//    }
 
-        if(wounded_obj != -1){
 
-            objects[BULLETS]->objects[0].status = false;
-            lives_left--;
-        }
+
+
+
+    wounded_obj = detect_hits(objects[GAME_TEXT], objects[BULLETS]->objects+0);
+    if(wounded_obj != -1){
+        objects[GAME_TEXT]->objects[wounded_obj].status = -100;
+        objects[BULLETS]->objects[0].status = false;
     }
+
 
 
 
@@ -288,28 +309,12 @@ int detect_hits(objects_t* objects, object_desc_t* bullet){
 
         object_desc_t* object = objects->objects + i;
 
-        if(object->status && bullet->status &&
+        if(object->status > 0 && bullet->status &&
            bullet->pos_y <= object->pos_y + object->size_y - 1 &&
             bullet->pos_y+bullet->size_y-1 >= object->pos_y &&
             bullet->pos_x+bullet->size_x-1 >= object->pos_x &&
            bullet->pos_x <= object->pos_x + object->size_x - 1)
         {
-//            object->status = false;
-//            switch (FIFTH_LINE-i/ALIENS_IN_LINE) {
-//                case 0:
-//                    game_score+=30;
-//                    break;
-//                case 1:
-//                case 2:
-//                    game_score+=20;
-//                    break;
-//                case 3:
-//                case 4:
-//                    game_score+=10;
-//                    break;
-//            }
-
-//            space_ship_bullet->status = false;
             return i;
         }
     }
@@ -332,8 +337,9 @@ void update_texture(objects_t** objects){
             case 2:
                 aliens->objects[i].bits_offset = 1*aliens->objects[i].bit_height;
                 break;
-            case -3:
+            case -10:
                 aliens->objects[i].bits_offset = -1*aliens->objects[i].bit_height;
+                aliens->objects[i].bit_width = 13;
                 break;
         }
     }
@@ -357,21 +363,56 @@ void update_texture(objects_t** objects){
         }
     }
 
+    objects_t* game_text = objects[GAME_TEXT];
+    for(int i = 0; i < game_text->count; i++){
+        if(game_text->objects[i].status < 0){
+//            printf("WOOOOOORK\n");
+            game_text->objects[i].bits_offset = 0;
+        }
+//        switch (game_text->objects[i].status){
+//            case -39:
+//                printf("WOOOOOORK\n");
+//                game_text->objects[i].bits_offset = 0;
+//                break;
+//        }
+    }
+
 }
 
 void update_game_text(objects_t* game_text){
 
-    for(int i = 0; i < game_text->count; i++){
-        game_text->objects[i].status = false;
-    }
+//    for(int i = 0; i < game_text->count; i++){
+//        game_text->objects[i].status = false;
+//    }
 
     char message[10000];
 
-    sprintf(message, "%d", game_score);
-    write_message(game_text, message, 30, 10);
+    sprintf(message, "SCORE<%d>", game_score);
+    write_message(game_text, message, 30, 8);
+
+    sprintf(message, "HI-SCORE<%d>", 10000);
+    write_message(game_text, message, 260, 8);
+
+//    sprintf(message, "QWERTYUIOPASDFGHJKLZXCVBNM qwertyuiopasdfghjklzxcvbnm <>=");
+//    write_message(game_text, message, 0, 100);
 
     sprintf(message, "%d", lives_left);
     write_message(game_text, message, 5, 300);
+
+    sprintf(message, "PINK FLOYD");
+    write_message(game_text, message, 330, 300);
+
+    frames1++;
+
+    gettimeofday(&end_time1, NULL);
+    elapsed_time1 = (end_time1.tv_sec - start_time1.tv_sec) + (end_time1.tv_usec - start_time1.tv_usec) / 1000000.0;
+
+    if(elapsed_time1 >= 1.0){
+        sprintf(message, "FPS %.2f", frames1 / elapsed_time1);
+        write_message(game_text, message, 180, 300);
+        frames1 = 0;
+        start_time1 = end_time1;
+    }
 
 //    sprintf(message, "HI_SCORE");
 //    write_message(game_text, message, 100, 100);
@@ -387,9 +428,11 @@ void write_message(objects_t* text, const char* message, int pos_x, int pos_y){
             curr_char = text->objects+0;
         }
 
-        int char_number = message[i] - '0';
+        int char_number = message[i] - ' ';
 //        printf("work\n");
-        curr_char[i].status = true;
+//        curr_char[i].status = true;
+        curr_char[i].status++;
+
         curr_char[i].bit_width = char_width[char_number];
         curr_char[i].bit_height = char_height[0];
         curr_char[i].size_x  = curr_char[i].bit_width * curr_char[i].scale;
