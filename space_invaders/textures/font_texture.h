@@ -3,7 +3,7 @@
 
 #include "stdint.h"
 
-static uint16_t char_bits[] = {
+static uint32_t char_bits[] = {
 /*  SPACE (32):
    ht=9, width=7
    +-------+
@@ -2263,3 +2263,4 @@ static uint8_t char_width[] = {
 };
 
 #endif //SPACE_INVADERS_FONT_TEXTURE_H
+

@@ -5,7 +5,7 @@
 #include "textures/font_texture.h"
 
 
-#define CHAR_NUM 10000
+#define CHAR_NUM 1000
 
 object_desc_t* game_text_desc;
 

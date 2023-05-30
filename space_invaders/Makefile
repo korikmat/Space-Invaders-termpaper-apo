@@ -16,6 +16,7 @@ SOURCES += game_objects/bullets.c
 SOURCES += game_objects/walls.c
 SOURCES += game_objects/game_text.c
 SOURCES += game_objects/lives.c
+SOURCES += game_objects/flying_saucer.c
 SOURCES += game_view/view.c
 SOURCES += game_model/model.c
 
@@ -33,9 +34,10 @@ TARGET_USER ?= root
 # for use from Eduroam network use TARGET_IP=localhost and enable next line
 #SSH_OPTIONS=-o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" -o "Port=2222"
 #SSH_GDB_TUNNEL_REQUIRED=y
-#SSH_OPTIONS=-i /home/mathew/Downloads/ssh-apo/mzapo-root-key
 
- SSH_OPTIONS=-i /home/shchnad/Downloads/mzapo-root-key
+SSH_OPTIONS=-i /home/mathew/Downloads/ssh-apo/mzapo-root-key
+
+# SSH_OPTIONS=-i /home/shchnad/Downloads/mzapo-root-key
 
 
 # SSH_OPTIONS=-o 'ProxyJump=korikmat@postel.felk.cvut.cz'
@@ -86,6 +88,7 @@ copy-executable: $(TARGET_EXE)
 	ssh $(SSH_OPTIONS) -t $(TARGET_USER)@$(TARGET_IP) killall gdbserver 1>/dev/null 2>/dev/null || true
 	ssh $(SSH_OPTIONS) $(TARGET_USER)@$(TARGET_IP) mkdir -p $(TARGET_DIR)
 	scp $(SSH_OPTIONS) $(TARGET_EXE) $(TARGET_USER)@$(TARGET_IP):$(TARGET_DIR)/$(TARGET_EXE)
+
 
 run: copy-executable $(TARGET_EXE)
 	ssh $(SSH_OPTIONS) -t $(TARGET_USER)@$(TARGET_IP) $(TARGET_DIR)/$(TARGET_EXE)

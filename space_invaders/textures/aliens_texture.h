@@ -3,7 +3,7 @@
 
 #include "stdint.h"
 
-static uint16_t aliens_bits[] = {
+static uint32_t aliens_bits[] = {
 
 /* EXPLOSION  :
    ht=8, width=8
@@ -152,18 +152,18 @@ static uint16_t aliens_bits[] = {
         0x264,
         0x492,
 
- /* Monster 3 ():
-   ht=8, width=12
-   +------------+
-   |    ****    |
-   | ********** |
-   |************|
-   |***  **  ***|
-   |************|
-   |  ***  ***  |
-   | **  **  ** |
-   |  **    **  |
-   +------------+ */
+        /* Monster 3 ():
+          ht=8, width=12
+          +------------+
+          |    ****    |
+          | ********** |
+          |************|
+          |***  **  ***|
+          |************|
+          |  ***  ***  |
+          | **  **  ** |
+          |  **    **  |
+          +------------+ */
         0xf0,
         0x7fe,
         0xfff,
@@ -193,6 +193,8 @@ static uint16_t aliens_bits[] = {
         0x198,
         0x30c,
         0xc63,
+
+
 };
 
 static uint8_t aliens_height[] = {

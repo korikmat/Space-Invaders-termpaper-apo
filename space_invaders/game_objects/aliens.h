@@ -31,6 +31,13 @@
 
 #define THIRD_GROUP_OFFSET_X 68
 
+#define FIRST_GROUP_ALIENS_COST 30
+#define SECOND_GROUP_ALIENS_COST 20
+#define THIRD_GROUP_ALIENS_COST 10
+
+
 objects_t* create_aliens();
+
+void reset_aliens(objects_t* aliens);
 
 #endif //SPACE_INVADERS_ALIENS_H

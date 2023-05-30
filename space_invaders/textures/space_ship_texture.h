@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-static uint16_t space_ship_bits[] = {
+static uint32_t space_ship_bits[] = {
 
 /* Spaceship ():
    ht=8, width=15

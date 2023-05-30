@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-static uint16_t wall_pieces_bits[] = {
+static uint32_t wall_pieces_bits[] = {
 ///* BLOCK_0:
 //   ht=5, width=5
 //  +-----+

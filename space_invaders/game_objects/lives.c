@@ -5,7 +5,7 @@
 
 #define POS_X 30
 #define POS_Y 300
-#define DISTANCE_X 50
+#define DISTANCE_X 35
 
 object_desc_t* live_desc;
 

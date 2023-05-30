@@ -8,13 +8,14 @@ typedef struct {
     int bit_width;
     int bit_height;
     int scale;
-    uint16_t *bits;
+    uint32_t *bits;
     int bits_offset;
     int status;
     int pos_x;
     int pos_y;
     int size_x;
     int size_y;
+    int cost;
 
 
 } object_desc_t;
