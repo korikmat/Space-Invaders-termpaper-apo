@@ -67,19 +67,21 @@ int main(int argc, char *argv[]) {
 //    double elapsed_time;
 
 //    gettimeofday(&start_time, NULL);
-    int game_state = -1;
+    int game_state = 1;
 
     while(true){
 
-        render(objects, OBJECTS_NUM);
-
-        game_state = advance_state(objects, OBJECTS_NUM);
+        if(game_state == -1){
+            game_state = process_menu(objects, OBJECTS_NUM);
+        }
+        if(game_state != -1){
+            game_state = advance_state(objects, OBJECTS_NUM);
+        }
         if(game_state == 0){
-//            objects[ALIENS] = create_aliens();
-//            objects[ALIENS]->color = WHITE;
-
             reset_aliens(objects[ALIENS]);
         }
+        render(objects, OBJECTS_NUM);
+
 //        frames++;
 //
 //        gettimeofday(&end_time, NULL);

@@ -8,30 +8,28 @@
 #include "kit_tools/mzapo_regs.h"
 #include "textures/font_texture.h"
 
+#include "game_objects/space_ship.h"
+#include "game_objects/aliens.h"
+#include "game_objects/flying_saucer.h"
+#include "game_objects/bullets.h"
+
 void set_hi_score();
 
-void move_space_ship(object_desc_t* space_ship);
-int get_pos_x_from_knob();
+//void move_space_ship(object_desc_t* space_ship);
+int get_pos_x_from_blue_knob();
 
 bool is_alien_dying(objects_t* aliens);
-void move_aliens(objects_t* aliens);
-void move_alive_alien(objects_t * aliens, int curr_idx);
-int get_last_alive_alien_idx(object_desc_t* aliens, int aliens_num);
-
-void move_flying_saucer(objects_t * flying_saucer_obj);
 
 void get_pos_x_of_objects(int* obj_pos_x, object_desc_t* space_ship, object_desc_t* aliens, int obj_num);
 void move_bullets(objects_t* bullets, objects_t* aliens, int* positions_x);
-void check_knob_presses(object_desc_t* bullet, int pos_x);
-void move_space_ship_bullet(object_desc_t* bullet);
-void move_alien_bullet(object_desc_t* bullet);
+bool if_red_knob_pressed();
 
 void detect_intersections(objects_t** objects);
 int detect_hits(objects_t* objects, object_desc_t* bullet);
 
 void actualize_lives(objects_t* lives);
 
-void update_texture(objects_t** objects);
+void update_textures(objects_t** objects);
 
 void check_hi_game_score();
 
@@ -76,35 +74,54 @@ void set_hi_score(){
     }
 }
 
+int process_menu(objects_t** objects, int obj_num){
+    objects[GAME_TEXT]->curr_obj_idx = 0;
+    char message[10];
+    for(int i = 0; i < 1000; i++){
+        objects[GAME_TEXT]->objects[i].scale = 4;
+    }
+//    objects[GAME_TEXT]->color = 0b1111111111111111;
+    sprintf(message, "PLAY");
+    write_message(objects[GAME_TEXT], message, 150, 150);
+
+
+    return -1;
+}
+
 int advance_state(objects_t** objects, int obj_num){
     if(lives_left == 0){
         printf("YOU DIED!\n");
+        // go through all objects and set visible to 0
+        for(int i = 0; i < obj_num; i++){
+            objects_t* object = objects[i];
+            for(int j = 0; j < object->count; j++){
+                object->objects[j].status = false;
+            }
+        }
+
         return -1;
     }
 
-    move_space_ship(objects[SPACE_SHIP]->objects);
+    move_space_ship(objects[SPACE_SHIP]->objects, get_pos_x_from_blue_knob());
 
     if(is_alien_dying(objects[ALIENS]) == false){
         move_aliens(objects[ALIENS]);
     }
 
-
     move_flying_saucer(objects[FLYING_SAUCER]);
-
-
 
     int obj_pos_x[objects[BULLETS]->count];
     get_pos_x_of_objects(obj_pos_x, objects[SPACE_SHIP]->objects, objects[ALIENS]->objects, objects[BULLETS]->count);
     move_bullets(objects[BULLETS], objects[ALIENS], obj_pos_x);
 
     detect_intersections(objects);
-//    detect_hits(objects[ALIENS], objects[BULLETS]);
+
     actualize_lives(objects[LIVES]);
 
     check_hi_game_score();
     update_game_text(objects[GAME_TEXT]);
 
-    update_texture(objects);
+    update_textures(objects);
 
     update_leds(objects);
 
@@ -112,14 +129,7 @@ int advance_state(objects_t** objects, int obj_num){
 
 }
 
-void move_space_ship(object_desc_t* space_ship){
-    int pos_x = get_pos_x_from_knob();
-//    printf("%d\n", pos_x);
-    space_ship->pos_x = pos_x;
-
-}
-
-int get_pos_x_from_knob(){
+int get_pos_x_from_blue_knob(){
     uint32_t r = *(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o);
     return (int)((r&0xff)*480)/256;
 }
@@ -137,118 +147,6 @@ bool is_alien_dying(objects_t* aliens){
     return false;
 }
 
-void move_aliens(objects_t* aliens){
-    int *i = &(aliens->curr_obj_idx);
-    int died_count = 0;
-    while((*i) < aliens->count){
-        object_desc_t* alien = aliens->objects+*i;
-        if(alien->status){
-
-            move_alive_alien(aliens, *i);
-
-            (*i)++;
-            (*i) %= aliens->count;
-            break;
-        }
-
-        died_count++;
-        if(died_count == aliens->count){
-            return;
-        }
-
-        (*i)++;
-        (*i) %= aliens->count;
-    }
-}
-
-void move_alive_alien(objects_t* aliens, int curr_idx){
-    object_desc_t* all_aliens = aliens->objects;
-    object_desc_t* curr_alien = aliens->objects+curr_idx;
-    int* speed_x = &aliens->speed_x;
-    int* speed_y = &aliens->speed_y;
-
-    if((*speed_y) == 0){
-        curr_alien->pos_x+=(*speed_x);
-        switch (curr_alien->status) {
-            case 1:
-                // curr_alien->bits++;
-                curr_alien->status = 2;
-                break;
-            case 2:
-                // curr_alien->bits++;
-                curr_alien->status = 1;
-        }
-    }
-
-    if(curr_alien->pos_y+curr_alien->size_y+(*speed_y) > 320){
-        printf("YOU LOST\n");
-        exit(0);
-    }
-    curr_alien->pos_y+=(*speed_y);
-//    printf("work\n");
-    if(curr_idx == get_last_alive_alien_idx(aliens->objects, aliens->count)){
-//        printf("LAST\n");
-        for(int i = 0; i < aliens->count; i++){
-            if(!all_aliens[i].status){
-                continue;
-            }
-            if(all_aliens[i].pos_x+all_aliens[i].size_x+(*speed_x) > 480 || all_aliens[i].pos_x+(*speed_x) < 0){
-                (*speed_y) = 16;
-                (*speed_x)*=-1;
-
-                break;
-            }
-            (*speed_y) = 0;
-        }
-    }
-
-
-}
-
-int get_last_alive_alien_idx(object_desc_t* aliens, int aliens_num){
-    int last_alive = aliens_num-1;
-
-    while(last_alive > 0 && !(aliens+last_alive)->status){
-        last_alive--;
-    }
-    if(!(aliens+last_alive)->status){
-        printf("ERROR: is not alien alive here!\n");
-        exit(1);
-    }
-    return last_alive;
-}
-
-void move_flying_saucer(objects_t * flying_saucer_obj){
-    object_desc_t* flying_saucer = flying_saucer_obj->objects;
-    if(flying_saucer->status == false && random()%1000+1 == 1){
-        if(random()%2 == 0){
-            printf("WORK\n");
-            flying_saucer_obj->speed_x = -1;
-            flying_saucer->pos_x = 480-flying_saucer->size_x;
-        } else {
-            flying_saucer_obj->speed_x = 1;
-            flying_saucer->pos_x = 0;
-        }
-        flying_saucer->status = true;
-    }
-    if(flying_saucer->status == true){
-        if(flying_saucer->pos_x+flying_saucer->size_x+flying_saucer_obj->speed_x*5 > 480){
-            flying_saucer->status = false;
-//            flying_saucer->pos_x = 0;
-            return;
-        }
-        if(flying_saucer->pos_x+flying_saucer_obj->speed_x*5 < 0){
-            flying_saucer->status = false;
-//            flying_saucer->pos_x = 480-flying_saucer->size_x;
-            return;
-        }
-        flying_saucer->pos_x+=flying_saucer_obj->speed_x*5;
-
-    }
-
-
-}
-
 void get_pos_x_of_objects(int* obj_pos_x, object_desc_t* space_ship, object_desc_t* aliens, int obj_num){
 
     obj_pos_x[0] = space_ship->pos_x+space_ship->size_x/2-1;
@@ -258,62 +156,14 @@ void get_pos_x_of_objects(int* obj_pos_x, object_desc_t* space_ship, object_desc
 }
 
 void move_bullets(objects_t* bullets, objects_t* aliens, int* positions_x){
-    check_knob_presses(bullets->objects, positions_x[0]);
 
-    if(bullets->objects[0].status){
-        move_space_ship_bullet(bullets->objects);
-    }
-
-    for(int i = 0; i < aliens->count; i++){
-        object_desc_t alien = aliens->objects[i];
-        object_desc_t* bullet = bullets->objects+i+1;
-        if(alien.status > 0){
-            if(!bullet->status && random()%1000+1 == 1){
-
-                bullet->status = true;
-                bullet->pos_x = alien.pos_x+alien.size_x/2;
-                bullet->pos_y = alien.pos_y+alien.size_y;
-
-            }
-        }
-        if(bullet->status){
-            move_alien_bullet(bullet);
-        }
-    }
+    move_space_ship_bullet(bullets->objects, positions_x[0], if_red_knob_pressed());
+    try_to_attack_space_ship(bullets, aliens);
 }
 
-void check_knob_presses(object_desc_t* bullet, int pos_x){
+bool if_red_knob_pressed(){
     uint32_t r = *(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o);
-    if(!bullet->status && (r & 0x4000000) != 0){
-        bullet->status = true;
-        bullet->pos_x = pos_x;
-        bullet->pos_y = 276;
-        printf("KNOB WAS PRESSED\n");
-    }
-}
-
-void move_space_ship_bullet(object_desc_t* bullet){
-    if(bullet->pos_y-8 <= 0){
-        bullet->status = false;
-        return;
-    }
-    uint32_t b = *(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o);
-    uint32_t r = *(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o);
-
-//    printf("%d\n", (int)(((r>>16)&0xff)*320)/256);
-//    printf("%d\n", (int)((b&0xff)*480)/256);
-
-//    bullet->pos_y = (int)(((r>>16)&0xff)*320)/256;
-//    bullet->pos_x = (int)((b&0xff)*480)/256;
-    bullet->pos_y-=8;
-}
-
-void move_alien_bullet(object_desc_t* bullet){
-    if(bullet->pos_y+bullet->size_y+4 > 320){
-        bullet->status = false;
-        return;
-    }
-    bullet->pos_y+=4;
+    return (r & 0x4000000) != 0;
 }
 
 void detect_intersections(objects_t** objects){
@@ -393,7 +243,7 @@ void actualize_lives(objects_t* lives){
     }
 }
 
-void update_texture(objects_t** objects){
+void update_textures(objects_t** objects){
     objects_t* aliens = objects[ALIENS];
     for(int i = 0; i < aliens->count; i++){
         switch (aliens->objects[i].status) {

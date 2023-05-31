@@ -11,6 +11,7 @@
 #define GAME_TEXT       6
 
 void init_model();
+int process_menu(objects_t** objects, int obj_num);
 int advance_state(objects_t** objects, int obj_num);
 
 #endif //SPACE_INVADERS_MODEL_H

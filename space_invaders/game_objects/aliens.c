@@ -1,11 +1,12 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "aliens.h"
 #include "../textures/aliens_texture.h"
 #include "object_structure.h"
 
-
-
+void move_alive_alien(objects_t* aliens, int curr_idx);
+int get_last_alive_alien_idx(object_desc_t* aliens, int aliens_num);
 
 objects_t* create_aliens(){
     object_desc_t* aliens_desc = malloc(ALIENS_NUM * sizeof(object_desc_t));
@@ -131,3 +132,83 @@ void reset_aliens(objects_t* aliens){
     aliens->curr_obj_idx = 0;
 }
 
+void move_aliens(objects_t* aliens){
+    int *i = &(aliens->curr_obj_idx);
+    int died_count = 0;
+    while((*i) < aliens->count){
+        object_desc_t* alien = aliens->objects+*i;
+        if(alien->status){
+
+            move_alive_alien(aliens, *i);
+
+            (*i)++;
+            (*i) %= aliens->count;
+            break;
+        }
+
+        died_count++;
+        if(died_count == aliens->count){
+            return;
+        }
+
+        (*i)++;
+        (*i) %= aliens->count;
+    }
+}
+
+void move_alive_alien(objects_t* aliens, int curr_idx){
+    object_desc_t* all_aliens = aliens->objects;
+    object_desc_t* curr_alien = aliens->objects+curr_idx;
+    int* speed_x = &aliens->speed_x;
+    int* speed_y = &aliens->speed_y;
+
+    if((*speed_y) == 0){
+        curr_alien->pos_x+=(*speed_x);
+        switch (curr_alien->status) {
+            case 1:
+                // curr_alien->bits++;
+                curr_alien->status = 2;
+                break;
+            case 2:
+                // curr_alien->bits++;
+                curr_alien->status = 1;
+        }
+    }
+
+    if(curr_alien->pos_y+curr_alien->size_y+(*speed_y) > 320){
+        printf("YOU LOST\n");
+        exit(0);
+    }
+    curr_alien->pos_y+=(*speed_y);
+//    printf("work\n");
+    if(curr_idx == get_last_alive_alien_idx(aliens->objects, aliens->count)){
+//        printf("LAST\n");
+        for(int i = 0; i < aliens->count; i++){
+            if(!all_aliens[i].status){
+                continue;
+            }
+            if(all_aliens[i].pos_x+all_aliens[i].size_x+(*speed_x) > 480 || all_aliens[i].pos_x+(*speed_x) < 0){
+                (*speed_y) = 16;
+                (*speed_x)*=-1;
+
+                break;
+            }
+            (*speed_y) = 0;
+        }
+    }
+
+
+}
+
+int get_last_alive_alien_idx(object_desc_t* aliens, int aliens_num){
+    int last_alive = aliens_num-1;
+
+    while(last_alive > 0 && !(aliens+last_alive)->status){
+        last_alive--;
+    }
+    if(!(aliens+last_alive)->status){
+        printf("ERROR: is not alien alive here!\n");
+        exit(1);
+    }
+    return last_alive;
+}

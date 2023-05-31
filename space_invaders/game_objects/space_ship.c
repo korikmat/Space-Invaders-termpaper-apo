@@ -34,3 +34,10 @@ objects_t* create_space_ship(){
 
     return space_ship;
 }
+
+void move_space_ship(object_desc_t* space_ship, int pos_x){
+//    int pos_x = get_pos_x_from_knob();
+//    printf("%d\n", pos_x);
+    space_ship->pos_x = pos_x;
+
+}
