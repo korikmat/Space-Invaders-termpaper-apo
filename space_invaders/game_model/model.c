@@ -103,6 +103,8 @@ void init_model(){
 
     mem_base = map_phys_address(SPILED_REG_BASE_PHYS, SPILED_REG_SIZE, 0);
     set_hi_score();
+    printf("Model was init successfully!\n");
+
 }
 
 /* Tries to open the file with the highest score, if the file is not found, sets the highest score to 1*/
@@ -110,7 +112,11 @@ void set_hi_score(){
     FILE *hi_score_file = fopen(HI_SCORE_FILENAME, "rb");
     if (hi_score_file != NULL) {
         if(fread(&hi_score, sizeof(int), 1, hi_score_file) != 1){
+            fprintf(stderr, "Problems with hi-score file, reset hi-score to 0\n");
             hi_score = 0;
+        }
+        else{
+            printf("Hi-score was loaded from file!\n");
         }
         fclose(hi_score_file);
     } else {
@@ -133,7 +139,7 @@ int process_menu(objects_t** objects, int obj_num){
     switch (green_knob_value) {
         case 0:
             if(is_green_knob_pressed()){
-                printf("Green knob was pressed in PLAY\n");
+                printf("Starting GAME scene...\n");
                 ret = GAME;
             }
             sprintf(message, "PLAY");
@@ -147,7 +153,6 @@ int process_menu(objects_t** objects, int obj_num){
             break;
         case 2:
             if(is_green_knob_pressed()){
-                printf("Green knob was pressed in RESET\n");
                 reset_hi_score();
                 objects[MENU_TEXT]->color = RED;
             }
@@ -159,7 +164,7 @@ int process_menu(objects_t** objects, int obj_num){
             sprintf(message, "EXIT");
             write_message(objects[MENU_TEXT], message, MENU_BUTTONS_POS_X, MENU_BUTTONS_POS_Y);
             if(is_green_knob_pressed()){
-                printf("Green knob was pressed in EXIT\n");
+                printf("Exiting game...\n");
                 ret = EXIT;
             }
 
@@ -184,15 +189,19 @@ bool is_green_knob_pressed(){
 
 /* Prepares objects to be displayed on the game stage*/
 void prepare_game_scene(objects_t** objects){
+    printf( "\nPreparing game scene...\n");
     // clear menu text
     for(int i = 0; i < objects[MENU_TEXT]->count; i++){
         objects[MENU_TEXT]->objects[i].status = false;
     }
+    printf( "Menu text was cleared!\n");
 
     //prepare aliens
     reset_aliens(objects[ALIENS]);
+    printf( "Aliens was reset!\n");
     //prepare walls
     reset_walls(objects[WALLS]);
+    printf( "Walls was reset!\n");
     //prepare lives
     reset_lives(objects[LIVES]);
     if(lives_left == 0){
@@ -200,14 +209,18 @@ void prepare_game_scene(objects_t** objects){
         lives_left = LIVES_COUNT;
     }
     led32_lives = 0x00000001;
+    printf( "Lives was reset!\n");
 
     //prepare spaceship
     reset_space_ship(objects[SPACE_SHIP]);
+    printf( "Spaceship was reset!\n");
+    printf( "Game was prepared!\n");
 
 }
 
 /* Prepares objects before displaying the main menu*/
 void prepare_menu_scene(objects_t** objects, int obj_num){
+    printf( "Preparing menu scene...\n");
     // go through all objects and set visible to 0
     for(int i = 0; i < obj_num; i++){
         objects_t* object = objects[i];
@@ -215,10 +228,13 @@ void prepare_menu_scene(objects_t** objects, int obj_num){
             object->objects[j].status = false;
         }
     }
+    printf( "All objects was cleared!\n");
+
     // disable all LEDs
     *(volatile uint32_t*)(mem_base + SPILED_REG_LED_LINE_o) = 0;
     *(volatile uint32_t*)(mem_base + SPILED_REG_LED_RGB1_o) = 0;
     *(volatile uint32_t*)(mem_base + SPILED_REG_LED_RGB2_o) = 0;
+    printf( "Menu was prepared!\n");
 
 }
 
@@ -256,7 +272,10 @@ int advance_state(objects_t** objects){
     move_space_ship(objects[SPACE_SHIP]->objects, get_pos_x_from_blue_knob());
 
     if(!is_alien_dying(objects[ALIENS])){
-        move_aliens(objects[ALIENS]);
+        if(move_aliens(objects[ALIENS])){
+            lives_left = 0;
+            ret = MENU;
+        }
     }
 
     move_flying_saucer(objects[FLYING_SAUCER]);
@@ -395,6 +414,7 @@ void detect_intersections(objects_t** objects){
         if(i > 0){
             wounded_obj = detect_hits(objects[SPACE_SHIP], objects[BULLETS]->objects+i);
             if(wounded_obj != -1){
+                printf("Spaceship was attacked!\n");
                 objects[SPACE_SHIP]->objects->status = WOUNDED_SPACE_SHIP_STATUS;
                 objects[BULLETS]->objects[i].status = false;
 

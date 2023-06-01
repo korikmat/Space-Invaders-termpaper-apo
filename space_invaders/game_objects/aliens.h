@@ -40,6 +40,6 @@ objects_t* create_aliens();
 
 void reset_aliens(objects_t* aliens);
 
-void move_aliens(objects_t* aliens);
+bool move_aliens(objects_t* aliens);
 
 #endif //SPACE_INVADERS_ALIENS_H

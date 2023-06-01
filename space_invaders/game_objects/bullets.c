@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define ERROR 101
+
 #include "object_structure.h"
 #include "bullets.h"
 #include "textures/bullets_texture.h"
@@ -10,6 +12,10 @@ void move_alien_bullet(object_desc_t* bullet);
 objects_t* create_bullets(){
 
     object_desc_t* bullets_desc = malloc(BULLETS_NUM*sizeof(object_desc_t));
+    if(bullets_desc == NULL){
+        fprintf(stderr, "ERROR: Cant allocate mem for bullets_desc!\n");
+        exit(ERROR);
+    }
 
     for(int i = 0; i < BULLETS_NUM; i++){
         bullets_desc[i].bit_height = 4;
@@ -37,10 +43,15 @@ objects_t* create_bullets(){
     }
 
     objects_t* bullets = malloc(sizeof(objects_t));
+    if(bullets == NULL){
+        fprintf(stderr, "ERROR: Cant allocate mem for bullets!\n");
+        exit(ERROR);
+    }
     bullets->count = BULLETS_NUM;
     bullets->curr_obj_idx = 0;
     bullets->objects = bullets_desc;
 
+    printf("Bullets was created successfully!\n");
     return bullets;
 }
 

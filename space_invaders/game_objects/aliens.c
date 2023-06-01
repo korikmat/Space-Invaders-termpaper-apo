@@ -1,17 +1,23 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define ERROR 101
+
 #include "aliens.h"
 #include "../textures/aliens_texture.h"
 #include "object_structure.h"
 
-void move_alive_alien(objects_t* aliens, int curr_idx);
+bool move_alive_alien(objects_t* aliens, int curr_idx);
 int get_last_alive_alien_idx(object_desc_t* aliens, int aliens_num);
 
 objects_t* create_aliens(){
 //    object_desc_t aliens_desc[ALIENS_NUM];
 
     object_desc_t* aliens_desc = malloc(ALIENS_NUM * sizeof(object_desc_t));
+    if(aliens_desc == NULL){
+        fprintf(stderr, "ERROR: Cant allocate mem for aliens_desc!\n");
+        exit(ERROR);
+    }
     for(int i = 0; i < ALIENS_NUM; i++){
 
         switch (FIFTH_LINE-(i/ALIENS_IN_LINE)) {
@@ -66,6 +72,10 @@ objects_t* create_aliens(){
     }
 
     objects_t* aliens = malloc(sizeof(objects_t));
+    if(aliens == NULL){
+        fprintf(stderr, "ERROR: Cant allocate mem for aliens!\n");
+        exit(ERROR);
+    }
     aliens->count = ALIENS_NUM;
     aliens->objects = aliens_desc;
     aliens->speed_x = ALIENS_INITIAL_SPEED_X;
@@ -76,7 +86,7 @@ objects_t* create_aliens(){
 //            ALIENS_NUM,
 //            aliens_desc,
 //    };
-
+    printf("Aliens was created successfully!\n");
     return aliens;
 }
 
@@ -132,14 +142,15 @@ void reset_aliens(objects_t* aliens){
     aliens->curr_obj_idx = 0;
 }
 
-void move_aliens(objects_t* aliens){
+bool move_aliens(objects_t* aliens){
+    bool ret = false;
     int *i = &(aliens->curr_obj_idx);
     int died_count = 0;
     while((*i) < aliens->count){
         object_desc_t* alien = aliens->objects+*i;
         if(alien->status){
 
-            move_alive_alien(aliens, *i);
+            ret = move_alive_alien(aliens, *i);
 
             (*i)++;
             (*i) %= aliens->count;
@@ -148,15 +159,17 @@ void move_aliens(objects_t* aliens){
 
         died_count++;
         if(died_count == aliens->count){
-            return;
+            return ret;
         }
 
         (*i)++;
         (*i) %= aliens->count;
     }
+    return ret;
 }
 
-void move_alive_alien(objects_t* aliens, int curr_idx){
+bool move_alive_alien(objects_t* aliens, int curr_idx){
+    bool ret = false;
     object_desc_t* all_aliens = aliens->objects;
     object_desc_t* curr_alien = aliens->objects+curr_idx;
     int* speed_x = &aliens->speed_x;
@@ -176,11 +189,11 @@ void move_alive_alien(objects_t* aliens, int curr_idx){
     }
 
     if(curr_alien->pos_y+curr_alien->size_y+(*speed_y) > 320){
-        printf("YOU LOST\n");
-        exit(0);
+        printf("You lost!\n");
+        ret = true;
+        return ret;
     }
     curr_alien->pos_y+=(*speed_y);
-//    printf("work\n");
     if(curr_idx == get_last_alive_alien_idx(aliens->objects, aliens->count)){
 //        printf("LAST\n");
         for(int i = 0; i < aliens->count; i++){
@@ -196,7 +209,7 @@ void move_alive_alien(objects_t* aliens, int curr_idx){
             (*speed_y) = 0;
         }
     }
-
+    return ret;
 
 }
 

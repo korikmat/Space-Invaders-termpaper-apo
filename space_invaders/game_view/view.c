@@ -40,6 +40,7 @@ void init_drawing(){
 
     parlcd_mem_base = map_phys_address(PARLCD_REG_BASE_PHYS, PARLCD_REG_SIZE, 0);
     parlcd_hx8357_init(parlcd_mem_base);
+    printf( "View was initialized!\n");
 }
 
 void init_background(uint16_t *background, char* filename){
@@ -62,7 +63,7 @@ void init_background(uint16_t *background, char* filename){
         exit(ERROR);
     }
     fclose(background_file);
-    printf("%d %d\n", width, height);
+//    printf("%d %d\n", width, height);
     for(int i = 0; i < width*height; i++){
         background[i] = (uint16_t)(background_ppm[i*3]*31/255);
         background[i] = background[i]<<6;

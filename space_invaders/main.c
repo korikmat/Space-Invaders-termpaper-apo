@@ -13,6 +13,7 @@
 #include "game_view/view.h"
 
 #define SUCCESSFUL_EXIT 0;
+#define ERROR           101
 
 #define OBJECTS_NUM (MENU_TEXT+1)
 
@@ -21,8 +22,13 @@ void prepare_for_exit(objects_t** objects, int obj_num);
 int main(int argc, char *argv[]) {
     printf("The app is up and running!\n");
 
+    printf("\nStarting creating objects...\n");
     // create all game objects
     objects_t** objects = (objects_t**)malloc(OBJECTS_NUM*sizeof(objects_t*));
+    if(objects == NULL){
+        fprintf(stderr, "ERROR: Cant allocate mem for objects!\n");
+        exit(ERROR);
+    }
 
     objects[ALIENS] = create_aliens();
     objects[ALIENS]->color = WHITE;
@@ -49,6 +55,7 @@ int main(int argc, char *argv[]) {
     objects[MENU_TEXT]->color = WHITE;
 
     // init model and view
+    printf("\nStarting initializing...\n");
     init_model();
     prepare_menu_scene(objects, OBJECTS_NUM);
     init_drawing();
@@ -56,14 +63,8 @@ int main(int argc, char *argv[]) {
 //    struct timespec loop_delay;
 //    loop_delay.tv_sec = 0;
 //    loop_delay.tv_nsec = 1000/10 * 1000 * 1000;
-
-//    int frames = 0;
-//    struct timeval start_time, end_time;
-//    double elapsed_time;
-
-//    gettimeofday(&start_time, NULL);
+    printf( "\nStarting game loop...\n");
     int game_state = MENU;
-
     while(game_state != EXIT){
         render(objects, OBJECTS_NUM, game_state);
 
@@ -87,18 +88,6 @@ int main(int argc, char *argv[]) {
             prepare_for_exit(objects, OBJECTS_NUM);
         }
 
-
-
-//        frames++;
-//
-//        gettimeofday(&end_time, NULL);
-//        elapsed_time = (end_time.tv_sec - start_time.tv_sec) + (end_time.tv_usec - start_time.tv_usec) / 1000000.0;
-
-//        if(elapsed_time >= 1.0){
-//            printf("FPS: %.2f\n", frames / elapsed_time);
-//            frames = 0;
-//            start_time = end_time;
-//        }
 //        clock_nanosleep(CLOCK_MONOTONIC, 0, &loop_delay, NULL);
     }
 
@@ -112,4 +101,5 @@ void prepare_for_exit(objects_t** objects, int obj_num){
         free(object->objects);
         free(object);
     }
+    printf( "Goodbye:)\n");
 }

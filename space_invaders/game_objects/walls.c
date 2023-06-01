@@ -1,14 +1,19 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "object_structure.h"
 #include "walls.h"
 #include "textures/wall_pieces_texture.h"
 
-
+#define ERROR 101
 
 objects_t* create_walls(){
 
     object_desc_t* wall_pieces_desc = malloc(WALLS_NUM*WALL_PIECES_NUM*sizeof(object_desc_t));
+    if(wall_pieces_desc == NULL){
+        fprintf(stderr, "ERROR: Cant allocate mem for wall_pieces_desc!\n");
+        exit(ERROR);
+    }
 
     for(int i = 0; i < WALLS_NUM; i++){
         for(int j = WALL_PIECES_NUM*i; j < WALLS_NUM*WALL_PIECES_NUM; j++){
@@ -89,10 +94,15 @@ objects_t* create_walls(){
 
     }
     objects_t* walls = malloc(sizeof(objects_t));
+    if(walls == NULL){
+        fprintf(stderr, "ERROR: Cant allocate mem for walls!\n");
+        exit(ERROR);
+    }
     walls->count = WALLS_NUM*WALL_PIECES_NUM;
     walls->curr_obj_idx = 0;
     walls->objects = wall_pieces_desc;
 
+    printf("Walls was created successfully!\n");
     return walls;
 }
 
