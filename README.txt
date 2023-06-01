@@ -1,5 +1,9 @@
 Launch Guide!
 
+IMPORTATN: The executable was compiled for an RED type board!!! 
+		If you are using the GREEN type board, 
+		comment out #define ILI9481 in kit_tools/mzapo_parlcd.c
+
 Running through a ready-made executable file:
 1) You can run the game if you download all the files from the git from 
 the executable_files folder and transfer these three files to the board. 
