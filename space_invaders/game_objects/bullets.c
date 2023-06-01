@@ -49,7 +49,7 @@ void move_space_ship_bullet(object_desc_t* bullet, int pos_x, bool red_knob_pres
         bullet->status = true;
         bullet->pos_x = pos_x;
         bullet->pos_y = 276;
-        printf("KNOB WAS PRESSED\n");
+        printf("Spaceship bullet was activated!\n");
     }
     if(!bullet->status){
         return;
@@ -60,9 +60,6 @@ void move_space_ship_bullet(object_desc_t* bullet, int pos_x, bool red_knob_pres
     }
 //    uint32_t b = *(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o);
 //    uint32_t r = *(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o);
-
-//    printf("%d\n", (int)(((r>>16)&0xff)*320)/256);
-//    printf("%d\n", (int)((b&0xff)*480)/256);
 
 //    bullet->pos_y = (int)(((r>>16)&0xff)*320)/256;
 //    bullet->pos_x = (int)((b&0xff)*480)/256;

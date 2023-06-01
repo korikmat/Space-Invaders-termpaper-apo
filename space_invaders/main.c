@@ -1,38 +1,30 @@
-#define _POSIX_C_SOURCE 200112L
-
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdint.h>
-#include <time.h>
-#include <unistd.h>
-#include <termios.h>            //termios, TCSANOW, ECHO, ICANON
-#include <stdbool.h>
-#include <sys/time.h>
 
-#include "kit_tools/mzapo_parlcd.h"
-#include "kit_tools/mzapo_phys.h"
-#include "kit_tools/mzapo_regs.h"
+#include "game_objects/bullets.h"
+#include "game_objects/game_text.h"
+#include "game_objects/menu_text.h"
+#include "game_objects/walls.h"
+#include "game_objects/lives.h"
+#include "game_objects/flying_saucer.h"
 #include "game_objects/aliens.h"
 #include "game_objects/space_ship.h"
 #include "game_model/model.h"
 #include "game_view/view.h"
-#include "game_objects/bullets.h"
-#include "game_objects/game_text.h"
-#include "game_objects/walls.h"
-#include "game_objects/lives.h"
-#include "game_objects/flying_saucer.h"
 
+#define SUCCESSFUL_EXIT 0;
 
+#define OBJECTS_NUM (MENU_TEXT+1)
 
-#define OBJECTS_NUM (GAME_TEXT+1)
+void prepare_for_exit(objects_t** objects, int obj_num);
 
 int main(int argc, char *argv[]) {
-    printf("Started\n");
+    printf("The app is up and running!\n");
 
-    objects_t** objects = malloc(OBJECTS_NUM*sizeof(objects_t));
+    // create all game objects
+    objects_t** objects = (objects_t**)malloc(OBJECTS_NUM*sizeof(objects_t*));
 
     objects[ALIENS] = create_aliens();
-//    objects[ALIENS]->color = ORANGE;
     objects[ALIENS]->color = WHITE;
 
     objects[FLYING_SAUCER] = create_flying_saucer();
@@ -43,19 +35,22 @@ int main(int argc, char *argv[]) {
 
     objects[SPACE_SHIP] = create_space_ship();
     objects[SPACE_SHIP]->color = RED;
-//    objects[SPACE_SHIP]->color = GREEN;
 
     objects[WALLS] = create_walls();
     objects[WALLS]->color = WHITE;
 
     objects[LIVES] = create_lives();
-//    objects[LIVES]->color = WHITE;
     objects[LIVES]->color = WHITE;
 
     objects[GAME_TEXT] = create_game_text();
     objects[GAME_TEXT]->color = RED;
 
+    objects[MENU_TEXT] = create_menu_text();
+    objects[MENU_TEXT]->color = WHITE;
+
+    // init model and view
     init_model();
+    prepare_menu_scene(objects, OBJECTS_NUM);
     init_drawing();
 
 //    struct timespec loop_delay;
@@ -67,20 +62,32 @@ int main(int argc, char *argv[]) {
 //    double elapsed_time;
 
 //    gettimeofday(&start_time, NULL);
-    int game_state = 1;
+    int game_state = MENU;
 
-    while(true){
+    while(game_state != EXIT){
+        render(objects, OBJECTS_NUM, game_state);
 
-        if(game_state == -1){
+        if(game_state == MENU){
             game_state = process_menu(objects, OBJECTS_NUM);
+            if(game_state == GAME){
+                prepare_game_scene(objects);
+            }
         }
-        if(game_state != -1){
-            game_state = advance_state(objects, OBJECTS_NUM);
+        if(game_state == GAME){
+            game_state = advance_state(objects);
+            if(game_state == WIN){
+                prepare_game_scene(objects);
+                game_state = GAME;
+            }
+            if(game_state == MENU){
+                prepare_menu_scene(objects, OBJECTS_NUM);
+            }
         }
-        if(game_state == 0){
-            reset_aliens(objects[ALIENS]);
+        if(game_state == EXIT){
+            prepare_for_exit(objects, OBJECTS_NUM);
         }
-        render(objects, OBJECTS_NUM);
+
+
 
 //        frames++;
 //
@@ -95,5 +102,14 @@ int main(int argc, char *argv[]) {
 //        clock_nanosleep(CLOCK_MONOTONIC, 0, &loop_delay, NULL);
     }
 
-    return 0;
+    return SUCCESSFUL_EXIT;
+}
+
+// clear all game objects
+void prepare_for_exit(objects_t** objects, int obj_num){
+    for(int i = 0; i < obj_num; i++){
+        objects_t* object = objects[i];
+        free(object->objects);
+        free(object);
+    }
 }

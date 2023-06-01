@@ -22,7 +22,7 @@ typedef struct {
 
 typedef struct {
     int count;
-    object_desc_t *objects;
+    object_desc_t* objects;
     int speed_x;
     int speed_y;
 

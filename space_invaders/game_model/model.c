@@ -3,26 +3,70 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "model.h"
 #include "kit_tools/mzapo_phys.h"
 #include "kit_tools/mzapo_regs.h"
+
+#include "model.h"
 #include "textures/font_texture.h"
 
 #include "game_objects/space_ship.h"
 #include "game_objects/aliens.h"
 #include "game_objects/flying_saucer.h"
 #include "game_objects/bullets.h"
+#include "game_objects/walls.h"
+#include "game_objects/lives.h"
+
+#define DISPLAY_WIDTH 480
+#define DISPLAY_HEIGHT 320
+
+#define ERROR 101
+
+#define LIVES_COUNT 3
+#define LED32_LIVES_COUNT 0xffffffff
+
+#define HI_SCORE_FILENAME "hi-score.txt"
+
+#define MENU_BUTTONS_POS_X 28
+#define MENU_BUTTONS_POS_Y 293
+
+#define RED         0b1111100000000000;
+#define LIGHT_GREEN 0x00000f00;
+#define LIGHT_RED   0x000f0000;
+#define WHITE       0b1111111111111111;
+
+#define WOUNDED_ALIEN_STATUS (-10)
+#define WOUNDED_FLYING_SAUCER_STATUS (-20)
+#define WOUNDED_SPACE_SHIP_STATUS 50
+#define WOUNDED_TEXT_STATUS (-50)
+
+#define SCORE_POS_X         30
+#define SCORE_POS_Y         0
+#define HI_SCORE_POS_X      260
+#define HI_SCORE_POS_Y      0
+#define LIVES_POS_X         5
+#define LIVES_POS_Y         300
+#define PINK_FLOYD_POS_X    330
+#define PINK_FLOYD_POS_Y    300
+#define FPS_POS_X           180
+#define FPS_POS_Y           300
+
+
+bool lose();
+bool win(objects_t* aliens);
+bool stop();
 
 void set_hi_score();
 
-//void move_space_ship(object_desc_t* space_ship);
+bool is_green_knob_pressed();
+
+void reset_hi_score();
+
 int get_pos_x_from_blue_knob();
 
 bool is_alien_dying(objects_t* aliens);
 
-void get_pos_x_of_objects(int* obj_pos_x, object_desc_t* space_ship, object_desc_t* aliens, int obj_num);
-void move_bullets(objects_t* bullets, objects_t* aliens, int* positions_x);
-bool if_red_knob_pressed();
+void move_bullets(objects_t* bullets, objects_t* aliens, objects_t* space_ship);
+bool is_red_knob_pressed();
 
 void detect_intersections(objects_t** objects);
 int detect_hits(objects_t* objects, object_desc_t* bullet);
@@ -39,32 +83,33 @@ void write_message(objects_t* text, const char* message, int pos_x, int pos_y);
 void update_leds(objects_t** objects);
 bool is_space_ship_dying(objects_t* space_ship);
 
-int check_for_exit();
 void save_hi_score();
-
 
 
 unsigned char *mem_base;
 int score = 0;
 int hi_score = 0;
-int lives_left = 3;
+int lives_left = LIVES_COUNT;
+uint32_t led32_lives = LED32_LIVES_COUNT;
 
-int frames1 = 0;
-struct timeval start_time1, end_time1;
-double elapsed_time1;
+int frames = 0;
+struct timeval start_time, end_time;
+double elapsed_time;
 
+/* Allocates memory to the board and sets the hi-score */
 void init_model(){
-    gettimeofday(&start_time1, NULL);
+    gettimeofday(&start_time, NULL);
     srandom(time(NULL));
+
     mem_base = map_phys_address(SPILED_REG_BASE_PHYS, SPILED_REG_SIZE, 0);
     set_hi_score();
 }
 
+/* Tries to open the file with the highest score, if the file is not found, sets the highest score to 1*/
 void set_hi_score(){
-    FILE *hi_score_file = fopen("hi-score.txt", "rb");
+    FILE *hi_score_file = fopen(HI_SCORE_FILENAME, "rb");
     if (hi_score_file != NULL) {
         if(fread(&hi_score, sizeof(int), 1, hi_score_file) != 1){
-//        if(fscanf(hi_score_file, "%d", &hi_score) != 1){
             hi_score = 0;
         }
         fclose(hi_score_file);
@@ -74,104 +119,258 @@ void set_hi_score(){
     }
 }
 
+/* Processes the main menu*/
 int process_menu(objects_t** objects, int obj_num){
-    objects[GAME_TEXT]->curr_obj_idx = 0;
-    char message[10];
-    for(int i = 0; i < 1000; i++){
-        objects[GAME_TEXT]->objects[i].scale = 4;
+    int ret = MENU;
+    uint32_t r = *(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o);
+
+    objects[MENU_TEXT]->curr_obj_idx = 0;
+    objects[MENU_TEXT]->color = WHITE;
+
+    char message[100];
+                            // get green knob value
+    int green_knob_value = (int)(((r&0xff00)>>8)/4)%4;
+    switch (green_knob_value) {
+        case 0:
+            if(is_green_knob_pressed()){
+                printf("Green knob was pressed in PLAY\n");
+                ret = GAME;
+            }
+            sprintf(message, "PLAY");
+            write_message(objects[MENU_TEXT], message, MENU_BUTTONS_POS_X, MENU_BUTTONS_POS_Y);
+
+            break;
+        case 1:
+            sprintf(message, "HI-SCORE<%d>", hi_score);
+            write_message(objects[MENU_TEXT], message, MENU_BUTTONS_POS_X, MENU_BUTTONS_POS_Y);
+
+            break;
+        case 2:
+            if(is_green_knob_pressed()){
+                printf("Green knob was pressed in RESET\n");
+                reset_hi_score();
+                objects[MENU_TEXT]->color = RED;
+            }
+            sprintf(message, "RESET");
+            write_message(objects[MENU_TEXT], message, MENU_BUTTONS_POS_X, MENU_BUTTONS_POS_Y);
+
+            break;
+        case 3:
+            sprintf(message, "EXIT");
+            write_message(objects[MENU_TEXT], message, MENU_BUTTONS_POS_X, MENU_BUTTONS_POS_Y);
+            if(is_green_knob_pressed()){
+                printf("Green knob was pressed in EXIT\n");
+                ret = EXIT;
+            }
+
+            break;
+        default:
+            fprintf(stderr, "ERROR: Unknown green knob value!\n");
+            exit(ERROR);
     }
-//    objects[GAME_TEXT]->color = 0b1111111111111111;
-    sprintf(message, "PLAY");
-    write_message(objects[GAME_TEXT], message, 150, 150);
+    for(int i = objects[MENU_TEXT]->curr_obj_idx; i < objects[MENU_TEXT]->count; i++){
+        objects[MENU_TEXT]->objects[i].status = false;
+    }
 
-
-    return -1;
+    return ret;
 }
 
-int advance_state(objects_t** objects, int obj_num){
-    if(lives_left == 0){
-        printf("YOU DIED!\n");
-        // go through all objects and set visible to 0
-        for(int i = 0; i < obj_num; i++){
-            objects_t* object = objects[i];
-            for(int j = 0; j < object->count; j++){
-                object->objects[j].status = false;
-            }
-        }
+/* If green knob is pressed
+ * return true if is pressed, false otherwise*/
+bool is_green_knob_pressed(){
+    uint32_t knobs = *(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o);
+    return (knobs & 0x2000000)>>25 == 1;
+}
 
-        return -1;
+/* Prepares objects to be displayed on the game stage*/
+void prepare_game_scene(objects_t** objects){
+    // clear menu text
+    for(int i = 0; i < objects[MENU_TEXT]->count; i++){
+        objects[MENU_TEXT]->objects[i].status = false;
     }
 
+    //prepare aliens
+    reset_aliens(objects[ALIENS]);
+    //prepare walls
+    reset_walls(objects[WALLS]);
+    //prepare lives
+    reset_lives(objects[LIVES]);
+    if(lives_left == 0){
+        score = 0;
+        lives_left = LIVES_COUNT;
+    }
+    led32_lives = 0x00000001;
+
+    //prepare spaceship
+    reset_space_ship(objects[SPACE_SHIP]);
+
+}
+
+/* Prepares objects before displaying the main menu*/
+void prepare_menu_scene(objects_t** objects, int obj_num){
+    // go through all objects and set visible to 0
+    for(int i = 0; i < obj_num; i++){
+        objects_t* object = objects[i];
+        for(int j = 0; j < object->count; j++){
+            object->objects[j].status = false;
+        }
+    }
+    // disable all LEDs
+    *(volatile uint32_t*)(mem_base + SPILED_REG_LED_LINE_o) = 0;
+    *(volatile uint32_t*)(mem_base + SPILED_REG_LED_RGB1_o) = 0;
+    *(volatile uint32_t*)(mem_base + SPILED_REG_LED_RGB2_o) = 0;
+
+}
+
+/* Opens the file with the hi-score and resets it to 0*/
+void reset_hi_score(){
+    hi_score = 0;
+    printf("Resetting hi-score!\n");
+    FILE* hi_score_file = fopen("hi-score.txt", "wb");
+    if (hi_score_file != NULL) {
+        if(fwrite(&hi_score, sizeof(int), 1, hi_score_file) != 1){
+            fprintf(stderr, "ERROR: Cant write hi-score to file!\n");
+            fclose(hi_score_file);
+        }
+        fclose(hi_score_file);
+    } else {
+        fprintf(stderr, "ERROR: Cant open hi-score file!\n");
+    }
+}
+
+/* Basic Game Function. It is where the basic logic takes place.
+ * return: 1 if game continuing, -1 if game was lost, 0 if game was win*/
+int advance_state(objects_t** objects){
+    int ret = GAME;
+
+    if(lose()){
+        ret = MENU;
+        return ret;
+    }
+    if(win(objects[ALIENS])){
+        ret = WIN;
+        return ret;
+    }
+
+    // move objects
     move_space_ship(objects[SPACE_SHIP]->objects, get_pos_x_from_blue_knob());
 
-    if(is_alien_dying(objects[ALIENS]) == false){
+    if(!is_alien_dying(objects[ALIENS])){
         move_aliens(objects[ALIENS]);
     }
 
     move_flying_saucer(objects[FLYING_SAUCER]);
 
-    int obj_pos_x[objects[BULLETS]->count];
-    get_pos_x_of_objects(obj_pos_x, objects[SPACE_SHIP]->objects, objects[ALIENS]->objects, objects[BULLETS]->count);
-    move_bullets(objects[BULLETS], objects[ALIENS], obj_pos_x);
-
+    move_bullets(objects[BULLETS], objects[ALIENS], objects[SPACE_SHIP]);
+    // detect hits
     detect_intersections(objects);
-
+    // synchronize the object of lives and lives
     actualize_lives(objects[LIVES]);
-
+    // if the current score is greater than hi-score
     check_hi_game_score();
+    // update all text in game
     update_game_text(objects[GAME_TEXT]);
-
+    // update textures for all objects
     update_textures(objects);
-
+    // update RGB LEDs and LED32
     update_leds(objects);
+    // if blue knob was pressed
+    if(stop()){
+        ret = MENU;
+    }
 
-    return check_for_exit();
+    return ret;
 
 }
+/* Check if lives on LED32 is 0
+ * return true if is 0, false otherwise*/
+bool lose(){
+    bool ret = false;
+    if(led32_lives == 0){
+        printf("You lost!\n");
+        save_hi_score();
 
+        ret = true;
+    }
+    return ret;
+}
+/* Check if is alive aliens
+ * return true if is 0 alive aliens, false otherwise*/
+bool win(objects_t* aliens){
+    bool ret = false;
+
+    // go through all aliens to find alive
+    int alive_aliens_n = 0;
+    for(int i = 0; i < aliens->count; i++){
+        object_desc_t alien = aliens->objects[i];
+        if(alien.status != 0){
+            alive_aliens_n++;
+        }
+    }
+    // if alive alien wasn't found
+    if(alive_aliens_n == 0){
+        printf("All aliens was killed!\n");
+        ret = true;
+    }
+    return ret;
+}
+/* Get position x on display from blue knob value*/
 int get_pos_x_from_blue_knob(){
     uint32_t r = *(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o);
     return (int)((r&0xff)*480)/256;
 }
 
+/* Check if is dying aliens
+ * return true if alien is dying, false otherwise*/
 bool is_alien_dying(objects_t* aliens){
+    bool ret = false;
+    // go through all aliens to find anyone with status < 0
     object_desc_t* alien;
     for(int i = 0; i < aliens->count; i++){
         alien = aliens->objects+i;
 
         if(alien->status < 0){
 //            alien->status++;
-            return true;
+            ret = true;
         }
     }
-    return false;
+    return ret;
 }
+/* Check if is spaceship dying
+ * return true if is spaceship dying, false otherwise*/
+bool is_space_ship_dying(objects_t* space_ship){
+    bool ret = false;
 
-void get_pos_x_of_objects(int* obj_pos_x, object_desc_t* space_ship, object_desc_t* aliens, int obj_num){
+    object_desc_t* space_ship_desc = space_ship->objects;
+    if(space_ship_desc->status > 1){
+        space_ship_desc->status--;
+        ret = true;
 
-    obj_pos_x[0] = space_ship->pos_x+space_ship->size_x/2-1;
-    for(int i = 1; i < obj_num; i++){
-        obj_pos_x[i] = aliens[i].pos_x+aliens[i].size_x/2-1;
     }
+    return ret;
 }
 
-void move_bullets(objects_t* bullets, objects_t* aliens, int* positions_x){
-
-    move_space_ship_bullet(bullets->objects, positions_x[0], if_red_knob_pressed());
+/* Try to move spaceship and aliens bullets*/
+void move_bullets(objects_t* bullets, objects_t* aliens, objects_t* space_ship){
+    int bullet_pos_x = space_ship->objects->pos_x+space_ship->objects->size_x/2;
+    move_space_ship_bullet(bullets->objects, bullet_pos_x, is_red_knob_pressed());
     try_to_attack_space_ship(bullets, aliens);
 }
 
-bool if_red_knob_pressed(){
+/* Check if red knob is pressed
+ * return true if is pressed, false otherwise*/
+bool is_red_knob_pressed(){
     uint32_t r = *(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o);
     return (r & 0x4000000) != 0;
 }
 
+/* Check all intersections*/
 void detect_intersections(objects_t** objects){
     int wounded_obj;
     // return index of wounded object
     wounded_obj = detect_hits(objects[ALIENS], objects[BULLETS]->objects+0);
     if(wounded_obj != -1){
-        objects[ALIENS]->objects[wounded_obj].status = -10;
+        objects[ALIENS]->objects[wounded_obj].status = WOUNDED_ALIEN_STATUS;
 
         score+=objects[ALIENS]->objects[wounded_obj].cost;
         objects[BULLETS]->objects[0].status = false;
@@ -180,7 +379,7 @@ void detect_intersections(objects_t** objects){
 
     wounded_obj = detect_hits(objects[FLYING_SAUCER], objects[BULLETS]->objects+0);
     if(wounded_obj != -1){
-        objects[FLYING_SAUCER]->objects->status = -20;
+        objects[FLYING_SAUCER]->objects->status = WOUNDED_FLYING_SAUCER_STATUS;
 
 
         int coefficient = random()%3;
@@ -196,7 +395,7 @@ void detect_intersections(objects_t** objects){
         if(i > 0){
             wounded_obj = detect_hits(objects[SPACE_SHIP], objects[BULLETS]->objects+i);
             if(wounded_obj != -1){
-                objects[SPACE_SHIP]->objects->status = 10;
+                objects[SPACE_SHIP]->objects->status = WOUNDED_SPACE_SHIP_STATUS;
                 objects[BULLETS]->objects[i].status = false;
 
                 lives_left--;
@@ -204,7 +403,7 @@ void detect_intersections(objects_t** objects){
         }
         wounded_obj = detect_hits(objects[GAME_TEXT], objects[BULLETS]->objects+i);
         if(wounded_obj != -1){
-            objects[GAME_TEXT]->objects[wounded_obj].status = -50;
+            objects[GAME_TEXT]->objects[wounded_obj].status = WOUNDED_TEXT_STATUS;
 
             objects[BULLETS]->objects[i].status = false;
         }
@@ -218,7 +417,8 @@ void detect_intersections(objects_t** objects){
     }
 
 }
-
+/* Looks at the intersection of the objects specified in the arguments
+ * return the index of the object the bullet intersected with*/
 int detect_hits(objects_t* objects, object_desc_t* bullet){
 
     for(int i = 0; i < objects->count; i++){
@@ -237,12 +437,13 @@ int detect_hits(objects_t* objects, object_desc_t* bullet){
     return -1;
 }
 
+/* Synchronise left lives with objects lives */
 void actualize_lives(objects_t* lives){
     if(lives_left < lives->count){
         lives->objects[lives_left].status = false;
     }
 }
-
+/* Updates the textures of all game objects*/
 void update_textures(objects_t** objects){
     objects_t* aliens = objects[ALIENS];
     for(int i = 0; i < aliens->count; i++){
@@ -303,7 +504,7 @@ void update_textures(objects_t** objects){
             break;
     }
     if(flying_saucer->status < 0){
-        if(flying_saucer->status >= -10){
+        if(flying_saucer->status >= WOUNDED_FLYING_SAUCER_STATUS/2){
             char message[10];
             sprintf(message, "%d", flying_saucer->cost);
             write_message(objects[GAME_TEXT], message, flying_saucer->pos_x, flying_saucer->pos_y);
@@ -320,44 +521,48 @@ void update_textures(objects_t** objects){
 
 }
 
+/* Update hi-score if the current score is greater than hi-score*/
 void check_hi_game_score(){
     hi_score = score > hi_score ? score : hi_score;
 }
 
+/* Update all text in game*/
 void update_game_text(objects_t* game_text){
     game_text->curr_obj_idx = 0;
 
     char message[1000];
 
     sprintf(message, "SCORE<%d>", score);
-    write_message(game_text, message, 30, 0);
+    write_message(game_text, message, SCORE_POS_X, SCORE_POS_Y);
 
     sprintf(message, "HI-SCORE<%d>", hi_score);
-    write_message(game_text, message, 260, 0);
+    write_message(game_text, message, HI_SCORE_POS_X, HI_SCORE_POS_Y);
 
     sprintf(message, "%d", lives_left);
-    write_message(game_text, message, 5, 300);
+    write_message(game_text, message, LIVES_POS_X, LIVES_POS_Y);
 
     sprintf(message, "PINK FLOYD");
-    write_message(game_text, message, 330, 300);
+    write_message(game_text, message, PINK_FLOYD_POS_X, PINK_FLOYD_POS_Y);
 
-    frames1++;
+    // Displaying FPS
+    frames++;
 
-    gettimeofday(&end_time1, NULL);
-    elapsed_time1 = (end_time1.tv_sec - start_time1.tv_sec) + (end_time1.tv_usec - start_time1.tv_usec) / 1000000.0;
+    gettimeofday(&end_time, NULL);
+    elapsed_time = (end_time.tv_sec - start_time.tv_sec) + (end_time.tv_usec - start_time.tv_usec) / 1000000.0;
 
-    if(elapsed_time1 >= 1.0){
+    if(elapsed_time >= 1.0){
         for(int i = game_text->curr_obj_idx; i < game_text->count; i++){
             game_text->objects[i].status = false;
         }
-        sprintf(message, "FPS<%.2f>", frames1 / elapsed_time1);
-        write_message(game_text, message, 180, 300);
-        frames1 = 0;
-        start_time1 = end_time1;
+        sprintf(message, "FPS<%.2f>", frames / elapsed_time);
+        write_message(game_text, message, FPS_POS_X, FPS_POS_Y);
+        frames = 0;
+        start_time = end_time;
     }
 
 }
 
+/* Fills an array of text objects with appropriate characters*/
 void write_message(objects_t* text, const char* message, int pos_x, int pos_y){
     object_desc_t* curr_char = text->objects+text->curr_obj_idx;
 
@@ -371,15 +576,16 @@ void write_message(objects_t* text, const char* message, int pos_x, int pos_y){
 
         curr_char[i].status++;
 
+        curr_char[i].bits = char_bits;
         curr_char[i].bit_width = char_width[char_number];
         curr_char[i].bit_height = char_height[0];
         curr_char[i].size_x  = curr_char[i].bit_width * curr_char[i].scale;
 
-        if(pos_x+curr_char[i].size_x+curr_char[i].size_x > 480){
+        if(pos_x+curr_char[i].size_x+curr_char[i].size_x > DISPLAY_WIDTH){
             pos_y+=curr_char[i].size_y;
 
-            if(pos_y + curr_char[i].size_y > 320){
-                pos_y = 10;
+            if(pos_y + curr_char[i].size_y > DISPLAY_HEIGHT){
+                pos_y = 0;
 
             }
             pos_x = 0;
@@ -395,20 +601,23 @@ void write_message(objects_t* text, const char* message, int pos_x, int pos_y){
     text->curr_obj_idx+=i;
     text->curr_obj_idx%=text->count;
 }
-
-int check_for_exit(){
-    int ret = 1;
+/*Checks if the blue knob was pressed
+ * return true if was pressed, false otherwise*/
+bool stop(){
+    bool ret = false;
     uint32_t r = *(volatile uint32_t*)(mem_base + SPILED_REG_KNOBS_8BIT_o);
-    // if 3 knobs was pressed at once
-    if((r & 0x4000000)>>26 == 1 && (r & 0x2000000)>>25 == 1 && (r & 0x1000000)>>24 == 1){
-        save_hi_score();
-        ret = 0;
-
+    // if blue knob pressed
+    if((r & 0x1000000)>>24 == 1 ){
+            save_hi_score();
+            score = 0;
+            lives_left = 0;
+        ret = true;
     }
     return ret;
 
 }
 
+/* Saves the hi-score to a text file*/
 void save_hi_score(){
     printf("Saving hi-score!\n");
     FILE* hi_score_file = fopen("hi-score.txt", "wb");
@@ -423,43 +632,52 @@ void save_hi_score(){
     }
 }
 
+/* Update RGB LEDs and LED32*/
 void update_leds(objects_t** objects){
-    uint32_t led32_lives;
+    // update LED32
     switch (lives_left) {
         case 1:             //11 LEDs out of 32
-            led32_lives = 0x000007ff;
+            if (led32_lives > 0x000007ff){
+                led32_lives = led32_lives>>1;
+            }
+            if (led32_lives < 0x000007ff){
+                led32_lives = led32_lives<<1 | 0x1;
+            }
             break;
         case 2:             //21 LEDs out of 32
-            led32_lives = 0x001fffff;
+            if (led32_lives > 0x001fffff){
+                led32_lives = led32_lives>>1;
+            }
+            if (led32_lives < 0x001fffff){
+                led32_lives = led32_lives<<1 | 0x1;
+            }
             break;
         case 3:             //32 LEDs out of 32
-            led32_lives = 0xffffffff;
+            if (led32_lives < 0xffffffff){
+                led32_lives = led32_lives<<1 | 0x1;
+            }
             break;
         default:
-            led32_lives = 0;
+            if (led32_lives > 0x0){
+                led32_lives = led32_lives>>1;
+            }
     }
     *(volatile uint32_t*)(mem_base + SPILED_REG_LED_LINE_o) = led32_lives;
 
+    // update RGB1 LED
     if(is_alien_dying(objects[ALIENS])){
-        *(volatile uint32_t*)(mem_base + SPILED_REG_LED_RGB1_o) = 0x00000f00;
+        *(volatile uint32_t*)(mem_base + SPILED_REG_LED_RGB1_o) = LIGHT_GREEN;
     } else{
         *(volatile uint32_t*)(mem_base + SPILED_REG_LED_RGB1_o) = 0x0;
     }
+
+    // update RGB2 LED
     if(is_space_ship_dying(objects[SPACE_SHIP])){
-        *(volatile uint32_t*)(mem_base + SPILED_REG_LED_RGB2_o) = 0x000f0000;
+        *(volatile uint32_t*)(mem_base + SPILED_REG_LED_RGB2_o) = LIGHT_RED;
     } else{
         *(volatile uint32_t*)(mem_base + SPILED_REG_LED_RGB2_o) = 0x0;
     }
 
 }
 
-bool is_space_ship_dying(objects_t* space_ship){
-    object_desc_t* space_ship_desc = space_ship->objects;
 
-        if(space_ship_desc->status > 1){
-            space_ship_desc->status--;
-            return true;
-
-    }
-    return false;
-}

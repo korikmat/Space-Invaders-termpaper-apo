@@ -9,6 +9,8 @@ void move_alive_alien(objects_t* aliens, int curr_idx);
 int get_last_alive_alien_idx(object_desc_t* aliens, int aliens_num);
 
 objects_t* create_aliens(){
+//    object_desc_t aliens_desc[ALIENS_NUM];
+
     object_desc_t* aliens_desc = malloc(ALIENS_NUM * sizeof(object_desc_t));
     for(int i = 0; i < ALIENS_NUM; i++){
 
@@ -19,8 +21,6 @@ objects_t* create_aliens(){
 
                 // aliens_desc[i].bits_offset = 1*aliens_height[ZERO];
                 aliens_desc[i].bits = aliens_bits + 1*aliens_height[FIRST];
-
-
 
                 aliens_desc[i].pos_x = FIRST_GROUP_OFFSET_X + DISTANCE_X * (i % ALIENS_IN_LINE);
                 aliens_desc[i].pos_y = OFFSET_Y + DISTANCE_Y * ((ALIENS_NUM-1-i) / ALIENS_IN_LINE);
@@ -58,14 +58,14 @@ objects_t* create_aliens(){
         aliens_desc[i].scale = 2;
         aliens_desc[i].size_x = aliens_desc[i].bit_width * aliens_desc[i].scale;
         aliens_desc[i].size_y = aliens_desc[i].bit_height * aliens_desc[i].scale;
-        aliens_desc[i].status = true;
+        aliens_desc[i].status = false;
         aliens_desc[i].bits_offset = 0;
         // aliens_desc[i].bits = aliens_bits;
 
 
     }
 
-    objects_t *aliens = malloc(sizeof(objects_t));
+    objects_t* aliens = malloc(sizeof(objects_t));
     aliens->count = ALIENS_NUM;
     aliens->objects = aliens_desc;
     aliens->speed_x = ALIENS_INITIAL_SPEED_X;

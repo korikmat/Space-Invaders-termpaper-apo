@@ -12,6 +12,7 @@
 #define WALLS_DISTANCE_X 85
 
 objects_t* create_walls();
+void reset_walls(objects_t* walls);
 
 
 #endif //SPACE_INVADERS_WALLS_H

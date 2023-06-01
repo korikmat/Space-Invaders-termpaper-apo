@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
@@ -8,12 +9,10 @@
 #define FLYING_SAUCER_POS_X 0
 #define FLYING_SAUCER_POS_Y 30
 
-object_desc_t* flying_saucer_desc;
-
 objects_t* create_flying_saucer(){
     srandom(time(NULL));
 
-    flying_saucer_desc = malloc(1 * sizeof(object_desc_t));
+    object_desc_t* flying_saucer_desc = (object_desc_t*)malloc(1 * sizeof(object_desc_t));
 
     flying_saucer_desc->bit_width = flying_saucer_width;
     flying_saucer_desc->bit_height = flying_saucer_height;
@@ -26,15 +25,11 @@ objects_t* create_flying_saucer(){
     flying_saucer_desc->status = false;
     flying_saucer_desc->bits_offset = 0;
 
-    objects_t *flying_saucer = malloc(sizeof(objects_t));
+    objects_t *flying_saucer = (objects_t*)malloc(sizeof(objects_t));
     flying_saucer->count = 1;
 
     flying_saucer->objects = flying_saucer_desc;
     flying_saucer->speed_x = 1;
-//    objects_t space_ship = {
-//            1,
-//            live_desc
-//    };
 
     return flying_saucer;
 }

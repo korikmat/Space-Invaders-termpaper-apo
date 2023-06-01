@@ -15,6 +15,7 @@ SOURCES += game_objects/space_ship.c
 SOURCES += game_objects/bullets.c
 SOURCES += game_objects/walls.c
 SOURCES += game_objects/game_text.c
+SOURCES += game_objects/menu_text.c
 SOURCES += game_objects/lives.c
 SOURCES += game_objects/flying_saucer.c
 SOURCES += game_view/view.c
@@ -29,7 +30,7 @@ $(warning Run as "TARGET_IP=192.168.202.xxx make run" or modify Makefile)
 # TARGET_IP ?= 192.168.135.14
 endif
 endif
-TARGET_DIR ?= /tmp/$(shell whoami)
+TARGET_DIR ?= /home/$(shell whoami)
 TARGET_USER ?= root
 # for use from Eduroam network use TARGET_IP=localhost and enable next line
 #SSH_OPTIONS=-o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" -o "Port=2222"
@@ -88,10 +89,13 @@ copy-executable: $(TARGET_EXE)
 	ssh $(SSH_OPTIONS) -t $(TARGET_USER)@$(TARGET_IP) killall gdbserver 1>/dev/null 2>/dev/null || true
 	ssh $(SSH_OPTIONS) $(TARGET_USER)@$(TARGET_IP) mkdir -p $(TARGET_DIR)
 	scp $(SSH_OPTIONS) $(TARGET_EXE) $(TARGET_USER)@$(TARGET_IP):$(TARGET_DIR)/$(TARGET_EXE)
+	scp $(SSH_OPTIONS) menu-background.ppm $(TARGET_USER)@$(TARGET_IP):$(TARGET_DIR)/menu-background.ppm
+	scp $(SSH_OPTIONS) game-background.ppm $(TARGET_USER)@$(TARGET_IP):$(TARGET_DIR)/game-background.ppm
+
 
 
 run: copy-executable $(TARGET_EXE)
-	ssh $(SSH_OPTIONS) -t $(TARGET_USER)@$(TARGET_IP) $(TARGET_DIR)/$(TARGET_EXE)
+	ssh $(SSH_OPTIONS) -t $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./$(TARGET_EXE)"
 
 ifneq ($(filter -o ProxyJump=,$(SSH_OPTIONS))$(SSH_GDB_TUNNEL_REQUIRED),)
 SSH_GDB_PORT_FORWARD=-L 12345:127.0.0.1:12345

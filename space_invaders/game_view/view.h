@@ -21,6 +21,6 @@
 
 
 void init_drawing();
-void render(objects_t** objects, int obj_num);
+void render(objects_t** objects, int obj_num, int game_state);
 
 #endif //SPACE_INVADERS_VIEW_H
